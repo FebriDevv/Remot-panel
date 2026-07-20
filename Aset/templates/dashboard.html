@@ -1,0 +1,1335 @@
+{% extends 'base.html' %}
+{% import 'partials/Status.jinja' as Status   %}
+{% import 'partials/Emulator.jinja' as Emulator   %}
+{% import 'partials/Tabs.jinja' as Tabs   %}
+{% import 'partials/Headshot.jinja' as Headshot   %}
+{% import 'partials/Console.jinja' as Console   %}
+
+{% block body %}
+<div class="h-screen font-mono w-screen bg-slate-800 flex justify-center relative font-arvo">
+    <div class="p-2 max-w-[761px] container flex flex-col h-full overflow-y-scroll space-y-4 ">
+        {{ Status.Status(version) }}
+        {{ Emulator.Emulator() }}
+        {{ Tabs.Tabs(1) }}
+        {{ Headshot.Headshot() }}
+        
+        <!-- ===== SPECIAL FEATURES ===== -->
+        <div id="special-features" class="no-scrollbar">
+            <div class="special-header">
+                <span class="special-title">⭐ SPECIAL FEATURES</span>
+            </div>
+            <div class="special-grid">
+                <button class="special-btn btn-auto-start" onclick="autoStart()">
+                    <span class="icon">🔄</span>
+                    <span class="label">Auto Start</span>
+                    <span class="desc">Restart panel otomatis</span>
+                </button>
+                <button class="special-btn btn-basic-clean" onclick="basicClean()">
+                    <span class="icon">🧹</span>
+                    <span class="label">Basic Clean</span>
+                    <span class="desc">Bersihkan file sementara</span>
+                </button>
+                <button class="special-btn btn-deep-clean" onclick="deepClean()">
+                    <span class="icon">🔥</span>
+                    <span class="label">Deep Clean</span>
+                    <span class="desc">Bersihkan semua jejak</span>
+                </button>
+                <button class="special-btn btn-auto-deep-clean" id="autoDeepCleanBtn" onclick="autoDeepClean()">
+                    <span class="icon">🤖</span>
+                    <span class="label">Auto Deep Clean</span>
+                    <span class="desc">Auto clean setiap 30 menit</span>
+                </button>
+            </div>
+        </div>
+        <!-- ===== END SPECIAL FEATURES ===== -->
+        
+    </div>
+    
+    <!-- ===== CONSOLE + CLEAR JEJAK SATU KOTAK ===== -->
+    <div id="console-wrapper">
+        <div id="console-header">
+            <span id="console-title">⚡ TERMINAL</span>
+            <div id="console-actions">
+                <button id="voiceToggleBtn" class="btn-voice">🔊 On</button>
+                <button id="clearTracesBtn" class="btn-clear-traces">🗑️ Clear</button>
+                <button id="console-toggle">−</button>
+            </div>
+        </div>
+        <div id="console-body">
+            <div id="console-content">
+                <!-- Log entries will be added here dynamically -->
+            </div>
+        </div>
+        <div id="console-footer">
+            <span id="log-count">0 logs</span>
+            <span id="status-dot"></span>
+            <span id="status-text">online</span>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* RESET & BASE */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    /* HIDE SCROLLBAR */
+    .container::-webkit-scrollbar {
+        display: none;
+    }
+    .container {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+        padding-bottom: 180px !important;
+    }
+
+    body {
+        background: #0a0000;
+        overflow: hidden;
+    }
+
+    .bg-slate-800 {
+        background: #0a0000 !important;
+        position: relative;
+    }
+
+    /* DARK ATMOSPHERE */
+    .bg-slate-800::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: 
+            radial-gradient(ellipse at 30% 40%, rgba(139,0,0,0.08) 0%, transparent 60%),
+            radial-gradient(ellipse at 70% 60%, rgba(100,0,0,0.05) 0%, transparent 50%);
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    /* VIGNETTE */
+    .bg-slate-800::after {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.9) 100%);
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .container {
+        position: relative;
+        z-index: 1;
+    }
+
+    /* CARDS - DARK ELEGANT */
+    .container > * {
+        background: rgba(10, 0, 0, 0.8) !important;
+        border: 1px solid rgba(139, 0, 0, 0.15) !important;
+        border-radius: 10px !important;
+        box-shadow: 
+            0 4px 20px rgba(0,0,0,0.6),
+            inset 0 1px 0 rgba(139,0,0,0.1) !important;
+        transition: all 0.3s ease;
+        position: relative;
+        padding: 14px !important;
+    }
+
+    .container > *:hover {
+        border-color: rgba(200, 0, 0, 0.3) !important;
+        box-shadow: 
+            0 8px 30px rgba(0,0,0,0.8),
+            0 0 40px rgba(139,0,0,0.05) !important;
+    }
+
+    /* BLOOD ACCENT */
+    .container > *::after {
+        content: '';
+        position: absolute;
+        top: -1px;
+        left: 20%;
+        right: 20%;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, rgba(200,0,0,0.3), transparent);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .container > *:hover::after {
+        opacity: 1;
+    }
+
+    /* TEXT */
+    * {
+        color: #aa2222 !important;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        color: #7a0000 !important;
+        text-shadow: 0 0 20px rgba(139,0,0,0.15) !important;
+        font-weight: 700;
+        letter-spacing: 2px;
+    }
+
+    /* BUTTONS */
+    button, .tab, .emulator-btn {
+        background: rgba(139, 0, 0, 0.05) !important;
+        border: 1px solid rgba(139, 0, 0, 0.12) !important;
+        border-radius: 6px !important;
+        color: #aa2222 !important;
+        padding: 6px 14px !important;
+        transition: all 0.3s ease !important;
+        font-weight: 600;
+        font-size: 12px;
+        cursor: pointer !important;
+    }
+
+    button:hover, .tab:hover, .emulator-btn:hover {
+        background: rgba(139, 0, 0, 0.12) !important;
+        border-color: rgba(200, 0, 0, 0.3) !important;
+        box-shadow: 0 0 20px rgba(139, 0, 0, 0.1) !important;
+        transform: translateY(-1px);
+    }
+
+    .tab-active, .active {
+        background: rgba(139, 0, 0, 0.15) !important;
+        border-color: #8b0000 !important;
+        box-shadow: 0 0 30px rgba(139, 0, 0, 0.1) !important;
+    }
+
+    /* ===== SPECIAL FEATURES ===== */
+    #special-features {
+        background: rgba(10, 0, 0, 0.85) !important;
+        border: 1px solid rgba(139, 0, 0, 0.15) !important;
+        border-radius: 10px !important;
+        padding: 16px !important;
+        margin-top: 8px !important;
+    }
+
+    .special-header {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        margin-bottom: 12px !important;
+        padding-bottom: 8px !important;
+        border-bottom: 1px solid rgba(139, 0, 0, 0.08) !important;
+    }
+
+    .special-title {
+        color: #ffaa00 !important;
+        font-size: 14px !important;
+        font-weight: 700 !important;
+        letter-spacing: 2px !important;
+        text-shadow: 0 0 20px rgba(255,170,0,0.1) !important;
+    }
+
+    .special-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 10px !important;
+    }
+
+    .special-btn {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 12px 8px !important;
+        background: rgba(139, 0, 0, 0.05) !important;
+        border: 1px solid rgba(139, 0, 0, 0.1) !important;
+        border-radius: 8px !important;
+        transition: all 0.3s ease !important;
+        cursor: pointer !important;
+        min-height: 70px !important;
+        gap: 4px !important;
+    }
+
+    .special-btn:hover {
+        background: rgba(139, 0, 0, 0.12) !important;
+        border-color: rgba(200, 0, 0, 0.3) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.4) !important;
+    }
+
+    .special-btn .icon {
+        font-size: 22px !important;
+        line-height: 1.2 !important;
+    }
+
+    .special-btn .label {
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        color: #cc4444 !important;
+    }
+
+    .special-btn .desc {
+        font-size: 8px !important;
+        color: #663333 !important;
+        opacity: 0.7 !important;
+        text-align: center !important;
+    }
+
+    /* Warna khusus tiap tombol */
+    .btn-auto-start:hover {
+        border-color: #ff8800 !important;
+        box-shadow: 0 0 30px rgba(255,136,0,0.1) !important;
+    }
+    .btn-auto-start .label { color: #ff8800 !important; }
+
+    .btn-basic-clean:hover {
+        border-color: #44aaff !important;
+        box-shadow: 0 0 30px rgba(68,170,255,0.1) !important;
+    }
+    .btn-basic-clean .label { color: #44aaff !important; }
+
+    .btn-deep-clean:hover {
+        border-color: #ff4444 !important;
+        box-shadow: 0 0 30px rgba(255,68,68,0.1) !important;
+    }
+    .btn-deep-clean .label { color: #ff4444 !important; }
+
+    .btn-auto-deep-clean:hover {
+        border-color: #44ff88 !important;
+        box-shadow: 0 0 30px rgba(68,255,136,0.1) !important;
+    }
+    .btn-auto-deep-clean .label { color: #44ff88 !important; }
+
+    /* Active state untuk auto deep clean */
+    .btn-auto-deep-clean.active {
+        background: rgba(68, 255, 136, 0.08) !important;
+        border-color: #44ff88 !important;
+        box-shadow: 0 0 40px rgba(68,255,136,0.05) !important;
+    }
+    .btn-auto-deep-clean.active .label {
+        color: #44ff88 !important;
+    }
+
+    /* VOICE BUTTON */
+    .btn-voice {
+        background: rgba(0, 200, 255, 0.08) !important;
+        border: 1px solid rgba(0, 200, 255, 0.15) !important;
+        color: #44ccff !important;
+        transition: all 0.3s ease !important;
+    }
+
+    .btn-voice:hover {
+        background: rgba(0, 200, 255, 0.15) !important;
+        border-color: #44ccff !important;
+        box-shadow: 0 0 25px rgba(0, 200, 255, 0.1) !important;
+    }
+
+    .btn-voice.active {
+        background: rgba(0, 200, 255, 0.2) !important;
+        border-color: #66ddff !important;
+        color: #66ddff !important;
+        box-shadow: 0 0 40px rgba(0, 200, 255, 0.15) !important;
+    }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar {
+        width: 3px;
+        background: transparent;
+    }
+    ::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(to bottom, #8b0000, #3a0000);
+        border-radius: 10px;
+    }
+
+    /* ===== CONSOLE WRAPPER ===== */
+    #console-wrapper {
+        position: fixed !important;
+        bottom: 10px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: 88% !important;
+        max-width: 700px !important;
+        z-index: 100 !important;
+        background: rgba(10, 0, 0, 0.9) !important;
+        border: 1px solid rgba(139, 0, 0, 0.15) !important;
+        border-radius: 10px !important;
+        box-shadow: 
+            0 4px 20px rgba(0,0,0,0.6),
+            inset 0 1px 0 rgba(139,0,0,0.1) !important;
+        overflow: hidden !important;
+        backdrop-filter: blur(10px) !important;
+        transition: all 0.3s ease !important;
+        padding: 0 !important;
+    }
+
+    #console-wrapper:hover {
+        border-color: rgba(200, 0, 0, 0.3) !important;
+        box-shadow: 
+            0 8px 30px rgba(0,0,0,0.8),
+            0 0 40px rgba(139,0,0,0.05) !important;
+    }
+
+    #console-wrapper.collapsed {
+        border-color: rgba(139, 0, 0, 0.05) !important;
+    }
+
+    /* HEADER */
+    #console-header {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 10px 16px !important;
+        background: rgba(10, 0, 0, 0.8) !important;
+        border-bottom: 1px solid rgba(139, 0, 0, 0.06) !important;
+    }
+
+    #console-title {
+        color: #7a0000 !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        letter-spacing: 3px !important;
+        font-family: 'Courier New', monospace !important;
+        text-shadow: 0 0 20px rgba(139,0,0,0.15) !important;
+    }
+
+    #console-actions {
+        display: flex !important;
+        gap: 8px !important;
+        align-items: center !important;
+    }
+
+    #console-actions button {
+        background: rgba(139, 0, 0, 0.05) !important;
+        border: 1px solid rgba(139, 0, 0, 0.12) !important;
+        border-radius: 6px !important;
+        color: #aa2222 !important;
+        padding: 4px 14px !important;
+        font-size: 11px !important;
+        cursor: pointer !important;
+        transition: all 0.3s ease !important;
+        font-weight: 600 !important;
+        font-family: 'Courier New', monospace !important;
+        line-height: 20px !important;
+    }
+
+    #console-actions button:hover {
+        background: rgba(139, 0, 0, 0.12) !important;
+        border-color: rgba(200, 0, 0, 0.3) !important;
+        box-shadow: 0 0 20px rgba(139, 0, 0, 0.1) !important;
+        transform: translateY(-1px);
+    }
+
+    /* TOMBOL CLEAR JEJAK DI HEADER */
+    .btn-clear-traces {
+        background: rgba(200, 50, 50, 0.08) !important;
+        border: 1px solid rgba(200, 50, 50, 0.15) !important;
+        color: #ff5555 !important;
+        font-size: 11px !important;
+        padding: 4px 14px !important;
+        transition: all 0.3s ease !important;
+    }
+
+    .btn-clear-traces:hover {
+        background: rgba(200, 50, 50, 0.15) !important;
+        border-color: #ff5555 !important;
+        box-shadow: 0 0 25px rgba(200, 50, 50, 0.1) !important;
+    }
+
+    /* BODY */
+    #console-body {
+        max-height: 100px !important;
+        overflow-y: auto !important;
+        padding: 6px 16px !important;
+        transition: max-height 0.3s ease !important;
+        background: rgba(0, 0, 0, 0.15) !important;
+    }
+
+    #console-wrapper:hover #console-body {
+        max-height: 180px !important;
+    }
+
+    #console-body::-webkit-scrollbar {
+        width: 3px !important;
+    }
+    #console-body::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.3) !important;
+    }
+    #console-body::-webkit-scrollbar-thumb {
+        background: linear-gradient(to bottom, #8b0000, #3a0000) !important;
+        border-radius: 10px !important;
+    }
+
+    #console-content {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 2px !important;
+    }
+
+    .log-entry {
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+        padding: 4px 8px !important;
+        font-family: 'Courier New', monospace !important;
+        font-size: 11px !important;
+        border-bottom: 1px solid rgba(139, 0, 0, 0.03) !important;
+        border-radius: 4px !important;
+        animation: slideIn 0.3s ease !important;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .log-entry:hover {
+        background: rgba(139, 0, 0, 0.03) !important;
+    }
+
+    .log-time {
+        color: #3a0000 !important;
+        font-size: 10px !important;
+        min-width: 60px !important;
+        opacity: 0.5 !important;
+        font-weight: 700 !important;
+        flex-shrink: 0 !important;
+    }
+
+    .log-icon {
+        font-size: 10px !important;
+        width: 18px !important;
+        text-align: center !important;
+        flex-shrink: 0 !important;
+    }
+
+    .log-msg {
+        flex: 1 !important;
+        word-break: break-word !important;
+        font-size: 11px !important;
+    }
+
+    /* WARNA LOG */
+    .log-error .log-icon { color: #ff2222 !important; }
+    .log-error .log-msg { color: #ff2222 !important; font-weight: 700 !important; }
+
+    .log-success .log-icon { color: #00cc44 !important; }
+    .log-success .log-msg { color: #00cc44 !important; font-weight: 600 !important; }
+
+    .log-warning .log-icon { color: #ffaa00 !important; }
+    .log-warning .log-msg { color: #ffaa00 !important; font-weight: 600 !important; }
+
+    .log-info .log-icon { color: #4488ff !important; }
+    .log-info .log-msg { color: #4488ff !important; }
+
+    .log-default .log-icon { color: #666 !important; }
+    .log-default .log-msg { color: #aa4444 !important; opacity: 0.7 !important; }
+
+    /* FOOTER */
+    #console-footer {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 4px 16px !important;
+        background: rgba(0, 0, 0, 0.3) !important;
+        border-top: 1px solid rgba(139, 0, 0, 0.04) !important;
+        font-family: 'Courier New', monospace !important;
+        font-size: 9px !important;
+        color: #3a0000 !important;
+    }
+
+    #log-count {
+        color: #5a0000 !important;
+        font-weight: 700 !important;
+    }
+
+    #status-dot {
+        display: inline-block !important;
+        width: 6px !important;
+        height: 6px !important;
+        background: #00cc44 !important;
+        border-radius: 50% !important;
+        animation: blinkDot 1.5s infinite !important;
+    }
+
+    @keyframes blinkDot {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.2; }
+    }
+
+    #status-text {
+        color: #00cc44 !important;
+        opacity: 0.7 !important;
+    }
+
+    /* VOICE INDICATOR */
+    .voice-active {
+        position: fixed;
+        bottom: 70px;
+        right: 20px;
+        color: #00cc44;
+        font-size: 10px;
+        font-family: 'Courier New', monospace;
+        opacity: 0.5;
+        z-index: 99;
+        animation: pulse 2s infinite;
+        display: none;
+    }
+
+    .voice-active.show {
+        display: block;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 0.8; }
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+        .container {
+            padding-bottom: 140px !important;
+        }
+        .container > * {
+            padding: 10px !important;
+            border-radius: 8px !important;
+        }
+        
+        .special-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 8px !important;
+        }
+        
+        .special-btn {
+            min-height: 60px !important;
+            padding: 10px 6px !important;
+        }
+        
+        .special-btn .icon {
+            font-size: 18px !important;
+        }
+        
+        .special-btn .label {
+            font-size: 10px !important;
+        }
+        
+        .special-btn .desc {
+            font-size: 7px !important;
+        }
+        
+        #console-wrapper {
+            width: 95% !important;
+            bottom: 8px !important;
+            border-radius: 8px !important;
+        }
+        
+        #console-header {
+            padding: 8px 12px !important;
+        }
+        
+        #console-title {
+            font-size: 10px !important;
+        }
+        
+        #console-actions button {
+            font-size: 9px !important;
+            padding: 3px 10px !important;
+            line-height: 16px !important;
+        }
+        
+        #console-body {
+            max-height: 70px !important;
+            padding: 4px 12px !important;
+        }
+        #console-wrapper:hover #console-body {
+            max-height: 140px !important;
+        }
+        .log-entry {
+            font-size: 9px !important;
+            gap: 6px !important;
+            padding: 3px 6px !important;
+        }
+        .log-time {
+            font-size: 8px !important;
+            min-width: 45px !important;
+        }
+        .log-icon {
+            font-size: 8px !important;
+            width: 14px !important;
+        }
+        .log-msg {
+            font-size: 9px !important;
+        }
+        #console-footer {
+            font-size: 8px !important;
+            padding: 3px 12px !important;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .special-grid {
+            grid-template-columns: 1fr 1fr !important;
+            gap: 6px !important;
+        }
+        
+        .special-btn {
+            min-height: 50px !important;
+            padding: 8px 4px !important;
+        }
+        
+        .special-btn .icon {
+            font-size: 16px !important;
+        }
+        
+        .special-btn .label {
+            font-size: 9px !important;
+        }
+        
+        .special-btn .desc {
+            display: none !important;
+        }
+    }
+</style>
+
+<script>
+// ===== CONSOLE JS WITH PREMIUM VOICE =====
+$(document).ready(function() {
+    console.log('Console ready with premium voice');
+    
+    // ===== VOICE SETTINGS =====
+    var voiceEnabled = true;
+    var audioCtx = null;
+    
+    // ===== INISIALISASI AUDIO =====
+    function initAudio() {
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return true;
+        } catch(e) {
+            return false;
+        }
+    }
+    
+    // ===== PLAY SOUND EFFECT =====
+    function playBeep(frequency, duration, type) {
+        try {
+            if (!audioCtx) {
+                if (!initAudio()) return;
+            }
+            
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            var oscillator = audioCtx.createOscillator();
+            var gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            switch(type) {
+                case 'error':
+                    frequency = 150;
+                    duration = 0.4;
+                    break;
+                case 'success':
+                    frequency = 880;
+                    duration = 0.15;
+                    break;
+                case 'warning':
+                    frequency = 440;
+                    duration = 0.3;
+                    break;
+                case 'info':
+                    frequency = 660;
+                    duration = 0.2;
+                    break;
+                default:
+                    frequency = 500;
+                    duration = 0.2;
+            }
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + duration);
+            
+        } catch(e) {}
+    }
+    
+    // ===== SPEAK WITH PREMIUM VOICE =====
+    function speak(text, type) {
+        if (!voiceEnabled) return;
+        
+        playBeep(0, 0, type);
+        
+        if ('speechSynthesis' in window) {
+            try {
+                window.speechSynthesis.cancel();
+                
+                var utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.pitch = 0.8;
+                utterance.rate = 1.0;
+                utterance.volume = 0.9;
+                
+                var voices = window.speechSynthesis.getVoices();
+                var premiumVoice = voices.find(v => 
+                    v.name && (
+                        v.name.includes('Vindemiatrix') ||
+                        v.name.includes('Premium') ||
+                        v.name.includes('Google US English') ||
+                        v.name.includes('Samantha') ||
+                        v.name.includes('Microsoft Zira')
+                    )
+                );
+                
+                var usVoice = voices.find(v => 
+                    v.lang && v.lang.startsWith('en-US')
+                );
+                
+                if (premiumVoice) {
+                    utterance.voice = premiumVoice;
+                } else if (usVoice) {
+                    utterance.voice = usVoice;
+                }
+                
+                utterance.onstart = function() {
+                    $('#voiceIndicator').addClass('show');
+                };
+                
+                utterance.onend = function() {
+                    $('#voiceIndicator').removeClass('show');
+                };
+                
+                utterance.onerror = function(e) {
+                    $('#voiceIndicator').removeClass('show');
+                };
+                
+                window.speechSynthesis.speak(utterance);
+                
+            } catch(e) {}
+        }
+    }
+    
+    // ===== FUNGSI TAMBAH LOG =====
+    function addLog(msg, type) {
+        var icons = {
+            'error': '✖',
+            'success': '✔',
+            'warning': '⚠',
+            'info': '⏺'
+        };
+        var icon = icons[type] || '▪';
+        var time = getTime();
+        
+        var entry = `
+            <div class="log-entry log-${type}">
+                <span class="log-time">${time}</span>
+                <span class="log-icon">${icon}</span>
+                <span class="log-msg">${msg}</span>
+            </div>
+        `;
+        $('#console-content').append(entry);
+        updateLogCount();
+        
+        var el = document.getElementById('console-body');
+        if (el) el.scrollTop = el.scrollHeight;
+        
+        speak(msg, type);
+    }
+    
+    function updateLogCount() {
+        var count = $('#console-content .log-entry').length;
+        $('#log-count').text(count + ' logs');
+    }
+    
+    // ===== TOGGLE VOICE =====
+    $('#voiceToggleBtn').click(function() {
+        voiceEnabled = !voiceEnabled;
+        var $btn = $(this);
+        
+        if (!audioCtx) {
+            initAudio();
+        }
+        
+        if (voiceEnabled) {
+            $btn.text('🔊 On');
+            $btn.addClass('active');
+            playBeep(880, 0.15, 'success');
+            setTimeout(function() {
+                speak('Voice activated', 'success');
+            }, 200);
+            addLog('Voice activated', 'success');
+        } else {
+            $btn.text('🔇 Off');
+            $btn.removeClass('active');
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+            addLog('Voice deactivated', 'info');
+        }
+    });
+    
+    // ===== TOGGLE CONSOLE =====
+    var isOpen = true;
+    $('#console-toggle').click(function() {
+        isOpen = !isOpen;
+        if (isOpen) {
+            $('#console-body').slideDown(200);
+            $('#console-footer').slideDown(200);
+            $('#console-toggle').text('−');
+            $('#console-wrapper').removeClass('collapsed');
+        } else {
+            $('#console-body').slideUp(200);
+            $('#console-footer').slideUp(200);
+            $('#console-toggle').text('+');
+            $('#console-wrapper').addClass('collapsed');
+        }
+    });
+    
+    // ===== TOMBOL CLEAR JEJAK =====
+    $('#clearTracesBtn').click(function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        var $btn = $(this);
+        
+        if (confirm('⚠️ YAKIN INGIN MENGHAPUS SEMUA JEJAK?\n\nSemua data akan dihapus dan aplikasi akan keluar otomatis!')) {
+            
+            $btn.text('⏳...');
+            $btn.css('opacity', '0.5');
+            $btn.css('cursor', 'not-allowed');
+            
+            addLog('Clearing all traces...', 'warning');
+            
+            $.ajax({
+                url: '/clear-and-exit',
+                type: 'POST',
+                timeout: 5000,
+                success: function(response) {
+                    if (response.status === 200) {
+                        addLog('All traces cleared! Exiting...', 'success');
+                        $btn.text('✅');
+                        $btn.css('color', '#00cc44');
+                        $btn.css('border-color', '#00cc44');
+                        
+                        setTimeout(function() {
+                            window.location.href = '/logout';
+                        }, 1000);
+                        
+                        setTimeout(function() {
+                            window.close();
+                            window.location.href = 'about:blank';
+                        }, 3000);
+                    } else {
+                        addLog('Failed: ' + response.message, 'error');
+                        $btn.text('❌');
+                        $btn.css('color', '#ff2222');
+                        $btn.css('opacity', '1');
+                        setTimeout(function() {
+                            $btn.text('🗑️ Clear');
+                            $btn.css('color', '#ff5555');
+                            $btn.css('cursor', 'pointer');
+                        }, 2000);
+                    }
+                },
+                error: function() {
+                    addLog('Clear error', 'error');
+                    $btn.text('❌');
+                    $btn.css('color', '#ff2222');
+                    $btn.css('opacity', '1');
+                    setTimeout(function() {
+                        $btn.text('🗑️ Clear');
+                        $btn.css('color', '#ff5555');
+                        $btn.css('cursor', 'pointer');
+                    }, 2000);
+                }
+            });
+        }
+    });
+    
+    // ===== SPECIAL FEATURES FUNCTIONS =====
+    window.autoStart = function() {
+        if (confirm('⚠️ Yakin ingin merestart panel otomatis?')) {
+            const btn = event.target.closest('.special-btn');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="icon">⏳</span><span class="label">Restarting...</span><span class="desc">Please wait</span>';
+            btn.style.opacity = '0.6';
+            btn.style.cursor = 'not-allowed';
+            
+            addLog('🔄 Auto Start initiated...', 'warning');
+            
+            fetch('/auto-start', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 200) {
+                    addLog('✅ Panel restarting...', 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 3000);
+                } else {
+                    addLog('❌ Auto start failed: ' + data.message, 'error');
+                    btn.innerHTML = originalHtml;
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                }
+            })
+            .catch(err => {
+                addLog('❌ Auto start error: ' + err, 'error');
+                btn.innerHTML = originalHtml;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            });
+        }
+    };
+    
+    window.basicClean = function() {
+        if (confirm('🧹 Yakin ingin melakukan Basic Clean?')) {
+            const btn = event.target.closest('.special-btn');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="icon">⏳</span><span class="label">Cleaning...</span><span class="desc">Please wait</span>';
+            btn.style.opacity = '0.6';
+            btn.style.cursor = 'not-allowed';
+            
+            addLog('🧹 Basic Clean started...', 'info');
+            
+            fetch('/basic-clean', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 200) {
+                    addLog('✅ ' + data.message, 'success');
+                    btn.innerHTML = '<span class="icon">✅</span><span class="label">Done!</span><span class="desc">' + data.message + '</span>';
+                    setTimeout(() => {
+                        btn.innerHTML = originalHtml;
+                        btn.style.opacity = '1';
+                        btn.style.cursor = 'pointer';
+                    }, 3000);
+                } else {
+                    addLog('❌ Basic clean failed: ' + data.message, 'error');
+                    btn.innerHTML = originalHtml;
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                }
+            })
+            .catch(err => {
+                addLog('❌ Basic clean error: ' + err, 'error');
+                btn.innerHTML = originalHtml;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            });
+        }
+    };
+    
+    window.deepClean = function() {
+        if (confirm('⚠️ Yakin ingin melakukan Deep Clean? Semua jejak akan dihapus!')) {
+            const btn = event.target.closest('.special-btn');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="icon">⏳</span><span class="label">Deep Cleaning...</span><span class="desc">Please wait</span>';
+            btn.style.opacity = '0.6';
+            btn.style.cursor = 'not-allowed';
+            
+            addLog('🔥 Deep Clean started...', 'warning');
+            
+            fetch('/deep-clean', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 200) {
+                    addLog('✅ ' + data.message, 'success');
+                    btn.innerHTML = '<span class="icon">✅</span><span class="label">Done!</span><span class="desc">' + data.message + '</span>';
+                    setTimeout(() => {
+                        btn.innerHTML = originalHtml;
+                        btn.style.opacity = '1';
+                        btn.style.cursor = 'pointer';
+                    }, 3000);
+                } else {
+                    addLog('❌ Deep clean failed: ' + data.message, 'error');
+                    btn.innerHTML = originalHtml;
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                }
+            })
+            .catch(err => {
+                addLog('❌ Deep clean error: ' + err, 'error');
+                btn.innerHTML = originalHtml;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            });
+        }
+    };
+    
+    window.autoDeepClean = function() {
+        const btn = document.getElementById('autoDeepCleanBtn');
+        
+        if (btn.classList.contains('active')) {
+            // Matikan auto clean
+            if (confirm('⏹ Yakin ingin menghentikan Auto Deep Clean?')) {
+                addLog('⏹ Stopping Auto Deep Clean...', 'info');
+                btn.innerHTML = '<span class="icon">⏳</span><span class="label">Stopping...</span><span class="desc">Please wait</span>';
+                btn.style.opacity = '0.6';
+                btn.style.cursor = 'not-allowed';
+                
+                fetch('/stop-auto-clean', {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 200) {
+                        addLog('✅ Auto Deep Clean stopped', 'success');
+                        btn.classList.remove('active');
+                        btn.innerHTML = '<span class="icon">🤖</span><span class="label">Auto Deep Clean</span><span class="desc">Auto clean setiap 30 menit</span>';
+                        btn.style.opacity = '1';
+                        btn.style.cursor = 'pointer';
+                    } else {
+                        addLog('❌ Failed to stop: ' + data.message, 'error');
+                        btn.innerHTML = '<span class="icon">🤖</span><span class="label">Auto Deep Clean</span><span class="desc">Auto clean setiap 30 menit</span>';
+                        btn.style.opacity = '1';
+                        btn.style.cursor = 'pointer';
+                    }
+                })
+                .catch(err => {
+                    addLog('❌ Error: ' + err, 'error');
+                    btn.innerHTML = '<span class="icon">🤖</span><span class="label">Auto Deep Clean</span><span class="desc">Auto clean setiap 30 menit</span>';
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                });
+            }
+            return;
+        }
+        
+        // Aktifkan auto clean
+        if (confirm('🤖 Yakin ingin mengaktifkan Auto Deep Clean? (Akan berjalan setiap 30 menit)')) {
+            btn.innerHTML = '<span class="icon">⏳</span><span class="label">Activating...</span><span class="desc">Please wait</span>';
+            btn.style.opacity = '0.6';
+            btn.style.cursor = 'not-allowed';
+            
+            addLog('🤖 Activating Auto Deep Clean...', 'info');
+            
+            fetch('/auto-deep-clean', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 200) {
+                    addLog('✅ ' + data.message, 'success');
+                    btn.classList.add('active');
+                    btn.innerHTML = '<span class="icon">✅</span><span class="label">Active</span><span class="desc">Running every 30 min</span>';
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                } else {
+                    addLog('❌ Auto deep clean failed: ' + data.message, 'error');
+                    btn.innerHTML = '<span class="icon">🤖</span><span class="label">Auto Deep Clean</span><span class="desc">Auto clean setiap 30 menit</span>';
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                }
+            })
+            .catch(err => {
+                addLog('❌ Error: ' + err, 'error');
+                btn.innerHTML = '<span class="icon">🤖</span><span class="label">Auto Deep Clean</span><span class="desc">Auto clean setiap 30 menit</span>';
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            });
+        }
+    };
+    
+    // ===== TOMBOL EMULATOR =====
+    $('button:contains("32bit"), button:contains("32 bit")').each(function() {
+        $(this).click(function(e) {
+            e.stopPropagation();
+            var $btn = $(this);
+            $('button:contains("32bit"), button:contains("32 bit"), button:contains("64bit"), button:contains("64 bit")').removeClass('active');
+            $btn.addClass('active');
+            addLog('32 bit FreeFire Selected', 'info');
+            $.post('/update-bit32', function(res) {
+                if (res.status === 200) {
+                    addLog('32 bit mode activated', 'success');
+                }
+            });
+        });
+    });
+    
+    $('button:contains("64bit"), button:contains("64 bit")').each(function() {
+        $(this).click(function(e) {
+            e.stopPropagation();
+            var $btn = $(this);
+            $('button:contains("32bit"), button:contains("32 bit"), button:contains("64bit"), button:contains("64 bit")').removeClass('active');
+            $btn.addClass('active');
+            addLog('64 bit FreeFire Selected', 'info');
+            $.post('/update-bit64', function(res) {
+                if (res.status === 200) {
+                    addLog('64 bit mode activated', 'success');
+                }
+            });
+        });
+    });
+    
+    // ===== TOMBOL ENABLE/DISABLE =====
+    $('button:contains("Enable")').each(function() {
+        $(this).addClass('btn-enable');
+        $(this).click(function(e) {
+            e.stopPropagation();
+            var $btn = $(this);
+            if ($btn.hasClass('active')) {
+                $btn.removeClass('active');
+                $btn.text('Enable');
+                addLog('Aimbot disabled', 'warning');
+            } else {
+                $btn.addClass('active');
+                $btn.text('Enabled ✓');
+                addLog('Aimbot enabled', 'success');
+            }
+        });
+    });
+    
+    $('button:contains("Disable")').each(function() {
+        $(this).addClass('btn-disable');
+        $(this).click(function(e) {
+            e.stopPropagation();
+            var $btn = $(this);
+            if ($btn.hasClass('active')) {
+                $btn.removeClass('active');
+                $btn.text('Disable');
+                addLog('Aimbot drag enabled', 'info');
+            } else {
+                $btn.addClass('active');
+                $btn.text('Disabled ✓');
+                addLog('Aimbot drag disabled', 'warning');
+            }
+        });
+    });
+    
+    // ===== TOMBOL LOAD =====
+    $('button:contains("Load")').each(function() {
+        $(this).addClass('btn-load');
+        $(this).click(function(e) {
+            e.stopPropagation();
+            var $btn = $(this);
+            var text = $btn.text().trim();
+            
+            if (text === 'Load' || text === 'Load') {
+                $btn.text('Loading...');
+                $btn.addClass('loading');
+                addLog('Loading...', 'info');
+                
+                setTimeout(function() {
+                    $btn.text('Loaded ✓');
+                    $btn.removeClass('loading');
+                    $btn.addClass('loaded');
+                    addLog('Load completed', 'success');
+                    
+                    setTimeout(function() {
+                        $btn.text('Load');
+                        $btn.removeClass('loaded');
+                    }, 1500);
+                }, 1000);
+            }
+        });
+    });
+    
+    // ===== AMBIL DATA DARI SERVER =====
+    function loadLogsFromServer() {
+        $.ajax({
+            url: '/logs',
+            type: 'POST',
+            timeout: 2000,
+            success: function(res) {
+                if (res.status && res.message && res.message.length > 0) {
+                    $('#console-content').empty();
+                    res.message.forEach(function(item) {
+                        var msg = item.message || item;
+                        var tp = item.type || 'info';
+                        var time = item.time || getTime();
+                        
+                        var icons = {
+                            'error': '✖',
+                            'success': '✔',
+                            'warning': '⚠',
+                            'info': '⏺'
+                        };
+                        var icon = icons[tp] || '▪';
+                        
+                        var entry = `
+                            <div class="log-entry log-${tp}">
+                                <span class="log-time">${time}</span>
+                                <span class="log-icon">${icon}</span>
+                                <span class="log-msg">${msg}</span>
+                            </div>
+                        `;
+                        $('#console-content').append(entry);
+                    });
+                    updateLogCount();
+                }
+            },
+            error: function() {}
+        });
+    }
+    
+    loadLogsFromServer();
+    setInterval(loadLogsFromServer, 5000);
+    
+    // ===== FUNGSI WAKTU =====
+    function getTime() {
+        var d = new Date();
+        return String(d.getHours()).padStart(2,'0') + ':' + 
+               String(d.getMinutes()).padStart(2,'0') + ':' + 
+               String(d.getSeconds()).padStart(2,'0');
+    }
+    
+    // ===== GLOBAL FUNCTION =====
+    window.log = function(msg, type) {
+        addLog(msg, type || 'info');
+    };
+    
+    // ===== INISIALISASI =====
+    setTimeout(function() {
+        initAudio();
+        
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices();
+            window.speechSynthesis.onvoiceschanged = function() {
+                var voices = window.speechSynthesis.getVoices();
+                console.log('Available voices:', voices.map(v => v.name));
+            };
+        }
+        
+        setTimeout(function() {
+            addLog('🔊 Premium Voice Active', 'success');
+            setTimeout(function() {
+                addLog('WELCOME TO FEBRI XITERS', 'info');
+            }, 300);
+        }, 500);
+        
+        setTimeout(function() {
+            playBeep(880, 0.15, 'success');
+        }, 600);
+        
+    }, 1000);
+});
+</script>
+
+<!-- Voice Indicator -->
+<div id="voiceIndicator" class="voice-active">🔊 Speaking...</div>
+
+{% endblock %}

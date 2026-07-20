@@ -1,0 +1,733 @@
+{% extends 'base.html' %}
+{% import 'partials/Status.jinja' as Status   %}
+{% import 'partials/Emulator.jinja' as Emulator   %}
+{% import 'partials/Tabs.jinja' as Tabs   %}
+{% import 'partials/Settings.jinja' as Settings   %}
+{% import 'partials/Console.jinja' as Console   %}
+{% block body %}
+    <div class="h-screen font-mono w-screen bg-slate-800 flex justify-center relative font-arvo">
+        <div class="p-2 max-w-[761px] container flex flex-col h-full overflow-y-scroll space-y-4 ">
+            {{ Status.Status(version) }}
+            {{ Emulator.Emulator() }}
+            {{ Tabs.Tabs(4) }}
+            {{ Settings.Settings() }}
+        </div>
+        <!-- ===== CONSOLE ===== -->
+        <div id="console-wrapper">
+            <div id="console-header">
+                <span id="console-title">⚡ TERMINAL</span>
+                <div id="console-actions">
+                    <button id="clearTracesBtn" class="btn-clear-traces">🗑️ Clear</button>
+                    <button id="console-toggle">−</button>
+                </div>
+            </div>
+            <div id="console-body">
+                <div id="console-content"></div>
+            </div>
+            <div id="console-footer">
+                <span id="log-count">0 logs</span>
+                <span id="status-dot"></span>
+                <span id="status-text">online</span>
+            </div>
+        </div>
+    </div>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        /* HIDE SCROLLBAR */
+        .container::-webkit-scrollbar {
+            display: none;
+        }
+        .container {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+            padding-bottom: 180px !important;
+        }
+
+        body {
+            background: #0a0000;
+            overflow: hidden;
+        }
+
+        .bg-slate-800 {
+            background: #0a0000 !important;
+            position: relative;
+        }
+
+        /* DARK ATMOSPHERE */
+        .bg-slate-800::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(ellipse at 30% 40%, rgba(139,0,0,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 60%, rgba(100,0,0,0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* VIGNETTE */
+        .bg-slate-800::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.9) 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* CARDS - DARK ELEGANT */
+        .container > * {
+            background: rgba(10, 0, 0, 0.8) !important;
+            border: 1px solid rgba(139, 0, 0, 0.15) !important;
+            border-radius: 10px !important;
+            box-shadow: 
+                0 4px 20px rgba(0,0,0,0.6),
+                inset 0 1px 0 rgba(139,0,0,0.1) !important;
+            transition: all 0.3s ease;
+            position: relative;
+            padding: 14px !important;
+        }
+
+        .container > *:hover {
+            border-color: rgba(200, 0, 0, 0.3) !important;
+            box-shadow: 
+                0 8px 30px rgba(0,0,0,0.8),
+                0 0 40px rgba(139,0,0,0.05) !important;
+        }
+
+        /* BLOOD ACCENT */
+        .container > *::after {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 20%;
+            right: 20%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(200,0,0,0.3), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .container > *:hover::after {
+            opacity: 1;
+        }
+
+        /* TEXT */
+        * {
+            color: #aa2222 !important;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            color: #7a0000 !important;
+            text-shadow: 0 0 20px rgba(139,0,0,0.15) !important;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        /* BUTTONS */
+        button, .tab, .emulator-btn {
+            background: rgba(139, 0, 0, 0.05) !important;
+            border: 1px solid rgba(139, 0, 0, 0.12) !important;
+            border-radius: 6px !important;
+            color: #aa2222 !important;
+            padding: 6px 14px !important;
+            transition: all 0.3s ease !important;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer !important;
+        }
+
+        button:hover, .tab:hover, .emulator-btn:hover {
+            background: rgba(139, 0, 0, 0.12) !important;
+            border-color: rgba(200, 0, 0, 0.3) !important;
+            box-shadow: 0 0 20px rgba(139, 0, 0, 0.1) !important;
+            transform: translateY(-1px);
+        }
+
+        .tab-active, .active {
+            background: rgba(139, 0, 0, 0.15) !important;
+            border-color: #8b0000 !important;
+            box-shadow: 0 0 30px rgba(139, 0, 0, 0.1) !important;
+        }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar {
+            width: 3px;
+            background: transparent;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, #8b0000, #3a0000);
+            border-radius: 10px;
+        }
+
+        /* ===== CONSOLE STYLE ===== */
+        #console-wrapper {
+            position: fixed !important;
+            bottom: 10px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: 88% !important;
+            max-width: 700px !important;
+            z-index: 100 !important;
+            background: rgba(10, 0, 0, 0.9) !important;
+            border: 1px solid rgba(139, 0, 0, 0.15) !important;
+            border-radius: 10px !important;
+            box-shadow: 
+                0 4px 20px rgba(0,0,0,0.6),
+                inset 0 1px 0 rgba(139,0,0,0.1) !important;
+            overflow: hidden !important;
+            backdrop-filter: blur(10px) !important;
+            transition: all 0.3s ease !important;
+            padding: 0 !important;
+        }
+
+        #console-wrapper:hover {
+            border-color: rgba(200, 0, 0, 0.3) !important;
+            box-shadow: 
+                0 8px 30px rgba(0,0,0,0.8),
+                0 0 40px rgba(139,0,0,0.05) !important;
+        }
+
+        #console-wrapper.collapsed {
+            border-color: rgba(139, 0, 0, 0.05) !important;
+        }
+
+        #console-header {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            padding: 8px 16px !important;
+            background: rgba(10, 0, 0, 0.8) !important;
+            border-bottom: 1px solid rgba(139, 0, 0, 0.06) !important;
+        }
+
+        #console-title {
+            color: #7a0000 !important;
+            font-size: 12px !important;
+            font-weight: 700 !important;
+            letter-spacing: 3px !important;
+            font-family: 'Courier New', monospace !important;
+            text-shadow: 0 0 20px rgba(139,0,0,0.15) !important;
+        }
+
+        #console-actions {
+            display: flex !important;
+            gap: 8px !important;
+            align-items: center !important;
+        }
+
+        .btn-clear-traces {
+            background: rgba(200, 50, 50, 0.08) !important;
+            border: 1px solid rgba(200, 50, 50, 0.15) !important;
+            color: #ff5555 !important;
+            font-size: 11px !important;
+            padding: 4px 14px !important;
+            transition: all 0.3s ease !important;
+            border-radius: 6px !important;
+            cursor: pointer !important;
+            font-weight: 600 !important;
+            font-family: 'Courier New', monospace !important;
+        }
+
+        .btn-clear-traces:hover {
+            background: rgba(200, 50, 50, 0.15) !important;
+            border-color: #ff5555 !important;
+            box-shadow: 0 0 25px rgba(200, 50, 50, 0.1) !important;
+        }
+
+        #console-toggle {
+            background: rgba(139, 0, 0, 0.05) !important;
+            border: 1px solid rgba(139, 0, 0, 0.12) !important;
+            border-radius: 6px !important;
+            color: #aa2222 !important;
+            padding: 4px 14px !important;
+            font-size: 11px !important;
+            cursor: pointer !important;
+            transition: all 0.3s ease !important;
+            font-weight: 600 !important;
+            font-family: 'Courier New', monospace !important;
+            line-height: 20px !important;
+        }
+
+        #console-toggle:hover {
+            background: rgba(139, 0, 0, 0.12) !important;
+            border-color: rgba(200, 0, 0, 0.3) !important;
+            box-shadow: 0 0 20px rgba(139, 0, 0, 0.1) !important;
+            transform: translateY(-1px);
+        }
+
+        #console-body {
+            max-height: 80px !important;
+            overflow-y: auto !important;
+            padding: 6px 16px !important;
+            transition: max-height 0.3s ease !important;
+            background: rgba(0, 0, 0, 0.15) !important;
+        }
+
+        #console-wrapper:hover #console-body {
+            max-height: 160px !important;
+        }
+
+        #console-body::-webkit-scrollbar {
+            width: 3px !important;
+        }
+        #console-body::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.3) !important;
+        }
+        #console-body::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, #8b0000, #3a0000) !important;
+            border-radius: 10px !important;
+        }
+
+        #console-content {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 2px !important;
+        }
+
+        .log-entry {
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+            padding: 3px 8px !important;
+            font-family: 'Courier New', monospace !important;
+            font-size: 11px !important;
+            border-bottom: 1px solid rgba(139, 0, 0, 0.02) !important;
+            border-radius: 4px !important;
+        }
+
+        .log-entry:hover {
+            background: rgba(139, 0, 0, 0.03) !important;
+        }
+
+        .log-time {
+            color: #3a0000 !important;
+            font-size: 10px !important;
+            min-width: 60px !important;
+            opacity: 0.5 !important;
+            font-weight: 700 !important;
+            flex-shrink: 0 !important;
+        }
+
+        .log-icon {
+            font-size: 10px !important;
+            width: 18px !important;
+            text-align: center !important;
+            flex-shrink: 0 !important;
+        }
+
+        .log-msg {
+            flex: 1 !important;
+            word-break: break-word !important;
+            font-size: 11px !important;
+        }
+
+        .log-error .log-icon { color: #ff2222 !important; }
+        .log-error .log-msg { color: #ff2222 !important; font-weight: 700 !important; }
+
+        .log-success .log-icon { color: #00cc44 !important; }
+        .log-success .log-msg { color: #00cc44 !important; font-weight: 600 !important; }
+
+        .log-warning .log-icon { color: #ffaa00 !important; }
+        .log-warning .log-msg { color: #ffaa00 !important; font-weight: 600 !important; }
+
+        .log-info .log-icon { color: #4488ff !important; }
+        .log-info .log-msg { color: #4488ff !important; }
+
+        .log-default .log-icon { color: #666 !important; }
+        .log-default .log-msg { color: #aa4444 !important; opacity: 0.7 !important; }
+
+        #console-footer {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            padding: 4px 16px !important;
+            background: rgba(0, 0, 0, 0.3) !important;
+            border-top: 1px solid rgba(139, 0, 0, 0.04) !important;
+            font-family: 'Courier New', monospace !important;
+            font-size: 9px !important;
+            color: #3a0000 !important;
+        }
+
+        #log-count {
+            color: #5a0000 !important;
+            font-weight: 700 !important;
+        }
+
+        #status-dot {
+            display: inline-block !important;
+            width: 6px !important;
+            height: 6px !important;
+            background: #00cc44 !important;
+            border-radius: 50% !important;
+            animation: blinkDot 1.5s infinite !important;
+        }
+
+        @keyframes blinkDot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.2; }
+        }
+
+        #status-text {
+            color: #00cc44 !important;
+            opacity: 0.7 !important;
+        }
+
+        /* TOMBOL ENABLE - HIJAU */
+        .btn-enable {
+            background: rgba(0, 200, 0, 0.08) !important;
+            border: 1px solid rgba(0, 200, 0, 0.2) !important;
+            color: #00cc44 !important;
+            box-shadow: 0 0 20px rgba(0, 200, 0, 0.05) !important;
+            transition: all 0.3s ease !important;
+            cursor: pointer !important;
+        }
+
+        .btn-enable:hover {
+            background: rgba(0, 200, 0, 0.15) !important;
+            border-color: #00cc44 !important;
+            box-shadow: 0 0 30px rgba(0, 200, 0, 0.15) !important;
+            transform: scale(1.02) !important;
+        }
+
+        .btn-enable.active {
+            background: rgba(0, 200, 0, 0.2) !important;
+            border-color: #00ff55 !important;
+            color: #00ff55 !important;
+            box-shadow: 0 0 40px rgba(0, 200, 0, 0.2) !important;
+        }
+
+        /* TOMBOL DISABLE - MERAH */
+        .btn-disable {
+            background: rgba(200, 0, 0, 0.08) !important;
+            border: 1px solid rgba(200, 0, 0, 0.2) !important;
+            color: #ff3333 !important;
+            box-shadow: 0 0 20px rgba(200, 0, 0, 0.05) !important;
+            transition: all 0.3s ease !important;
+            cursor: pointer !important;
+        }
+
+        .btn-disable:hover {
+            background: rgba(200, 0, 0, 0.15) !important;
+            border-color: #ff3333 !important;
+            box-shadow: 0 0 30px rgba(200, 0, 0, 0.15) !important;
+            transform: scale(1.02) !important;
+        }
+
+        .btn-disable.active {
+            background: rgba(200, 0, 0, 0.2) !important;
+            border-color: #ff4444 !important;
+            color: #ff4444 !important;
+            box-shadow: 0 0 40px rgba(200, 0, 0, 0.2) !important;
+        }
+
+        .btn-load {
+            transition: all 0.3s ease !important;
+            cursor: pointer !important;
+        }
+
+        .btn-load.loading {
+            opacity: 0.5 !important;
+        }
+
+        .btn-load.loaded {
+            color: #00cc44 !important;
+        }
+
+        /* TOMBOL LOGOUT */
+        .btn-logout {
+            background: rgba(200, 50, 50, 0.08) !important;
+            border: 1px solid rgba(200, 50, 50, 0.15) !important;
+            color: #ff5555 !important;
+            transition: all 0.3s ease !important;
+            cursor: pointer !important;
+        }
+
+        .btn-logout:hover {
+            background: rgba(200, 50, 50, 0.15) !important;
+            border-color: #ff5555 !important;
+            box-shadow: 0 0 25px rgba(200, 50, 50, 0.1) !important;
+            transform: scale(1.02) !important;
+        }
+
+        .status-indicator {
+            border-left: 2px solid #8b0000 !important;
+            background: rgba(139, 0, 0, 0.03) !important;
+            padding-left: 12px !important;
+            border-radius: 0 6px 6px 0 !important;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .status-pulse {
+            animation: pulse 2s infinite;
+        }
+
+        hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(139,0,0,0.1), transparent);
+            margin: 10px 0;
+        }
+
+        @keyframes glitch {
+            0%, 100% { opacity: 1; }
+            2% { opacity: 0.97; transform: translateX(-0.5px); }
+            4% { opacity: 1; transform: translateX(0.5px); }
+            6% { opacity: 0.98; }
+            8% { opacity: 1; }
+        }
+        .container {
+            animation: glitch 4s infinite;
+        }
+
+        .container > *:nth-child(1)::before {
+            content: '🩸';
+            position: absolute;
+            bottom: 8px;
+            right: 12px;
+            font-size: 18px;
+            opacity: 0.04;
+        }
+        .container > *:nth-child(3)::before {
+            content: '💀';
+            position: absolute;
+            top: 8px;
+            left: 12px;
+            font-size: 16px;
+            opacity: 0.03;
+            transform: rotate(-20deg);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding-bottom: 140px !important;
+            }
+            .container > * {
+                padding: 10px !important;
+                border-radius: 8px !important;
+            }
+            
+            #console-wrapper {
+                width: 95% !important;
+                bottom: 8px !important;
+                border-radius: 8px !important;
+            }
+            #console-header {
+                padding: 6px 12px !important;
+            }
+            #console-title {
+                font-size: 10px !important;
+            }
+            #console-actions button {
+                font-size: 9px !important;
+                padding: 3px 10px !important;
+                line-height: 16px !important;
+            }
+            #console-body {
+                max-height: 60px !important;
+                padding: 4px 12px !important;
+            }
+            #console-wrapper:hover #console-body {
+                max-height: 120px !important;
+            }
+            .log-entry {
+                font-size: 9px !important;
+                gap: 6px !important;
+                padding: 2px 6px !important;
+            }
+            .log-time {
+                font-size: 8px !important;
+                min-width: 45px !important;
+            }
+            .log-icon {
+                font-size: 8px !important;
+                width: 14px !important;
+            }
+            .log-msg {
+                font-size: 9px !important;
+            }
+            #console-footer {
+                font-size: 8px !important;
+                padding: 3px 12px !important;
+            }
+            .btn-enable, .btn-disable, .btn-logout {
+                font-size: 10px !important;
+                padding: 4px 10px !important;
+            }
+            * {
+                text-shadow: none !important;
+            }
+        }
+    </style>
+
+    <script>
+    // ===== SCRIPT UNTUK SETTINGS =====
+    $(document).ready(function() {
+        console.log('Settings panel ready');
+        
+        // Fungsi tambah log ke console
+        function addLog(msg, type) {
+            var icons = {
+                'error': '✖',
+                'success': '✔',
+                'warning': '⚠',
+                'info': '⏺'
+            };
+            var icon = icons[type] || '▪';
+            var time = getTime();
+            
+            var entry = `
+                <div class="log-entry log-${type}">
+                    <span class="log-time">${time}</span>
+                    <span class="log-icon">${icon}</span>
+                    <span class="log-msg">${msg}</span>
+                </div>
+            `;
+            $('#console-content').append(entry);
+            updateLogCount();
+            
+            var el = document.getElementById('console-body');
+            if (el) el.scrollTop = el.scrollHeight;
+        }
+        
+        function updateLogCount() {
+            var count = $('#console-content .log-entry').length;
+            $('#log-count').text(count + ' logs');
+        }
+        
+        function getTime() {
+            var d = new Date();
+            return String(d.getHours()).padStart(2,'0') + ':' + 
+                   String(d.getMinutes()).padStart(2,'0') + ':' + 
+                   String(d.getSeconds()).padStart(2,'0');
+        }
+        
+        // ===== TOGGLE CONSOLE =====
+        var isOpen = true;
+        $('#console-toggle').click(function() {
+            isOpen = !isOpen;
+            if (isOpen) {
+                $('#console-body').slideDown(200);
+                $('#console-footer').slideDown(200);
+                $('#console-toggle').text('−');
+                $('#console-wrapper').removeClass('collapsed');
+            } else {
+                $('#console-body').slideUp(200);
+                $('#console-footer').slideUp(200);
+                $('#console-toggle').text('+');
+                $('#console-wrapper').addClass('collapsed');
+            }
+        });
+        
+        // ===== TOMBOL CLEAR =====
+        $('#clearTracesBtn').click(function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            var $btn = $(this);
+            
+            if (confirm('⚠️ YAKIN INGIN MENGHAPUS SEMUA LOG?')) {
+                $('#console-content').empty();
+                updateLogCount();
+                addLog('Logs cleared', 'warning');
+                
+                $btn.text('✅');
+                $btn.css('color', '#00cc44');
+                setTimeout(function() {
+                    $btn.text('🗑️ Clear');
+                    $btn.css('color', '#ff5555');
+                }, 1500);
+            }
+        });
+        
+        // ===== TOMBOL LOGOUT =====
+        $('button:contains("Logout"), button:contains("logout")').each(function() {
+            $(this).addClass('btn-logout');
+            $(this).click(function(e) {
+                e.stopPropagation();
+                if (confirm('Yakin ingin logout?')) {
+                    $.get('/logout', function(res) {
+                        if (res.status === 200) {
+                            addLog('Logout successful', 'success');
+                            setTimeout(function() {
+                                window.location.href = '/';
+                            }, 500);
+                        } else {
+                            addLog('Logout failed', 'error');
+                        }
+                    }).fail(function() {
+                        addLog('Logout error', 'error');
+                    });
+                }
+            });
+        });
+        
+        // ===== AMBIL LOG DARI SERVER =====
+        function loadLogsFromServer() {
+            $.ajax({
+                url: '/logs',
+                type: 'POST',
+                timeout: 2000,
+                success: function(res) {
+                    if (res.status && res.message && res.message.length > 0) {
+                        $('#console-content').empty();
+                        res.message.forEach(function(item) {
+                            var msg = item.message || item;
+                            var tp = item.type || 'info';
+                            var time = item.time || getTime();
+                            
+                            var icons = {
+                                'error': '✖',
+                                'success': '✔',
+                                'warning': '⚠',
+                                'info': '⏺'
+                            };
+                            var icon = icons[tp] || '▪';
+                            
+                            var entry = `
+                                <div class="log-entry log-${tp}">
+                                    <span class="log-time">${time}</span>
+                                    <span class="log-icon">${icon}</span>
+                                    <span class="log-msg">${msg}</span>
+                                </div>
+                            `;
+                            $('#console-content').append(entry);
+                        });
+                        updateLogCount();
+                    }
+                }
+            });
+        }
+        
+        loadLogsFromServer();
+        setInterval(loadLogsFromServer, 5000);
+        
+        // ===== EXPORT GLOBAL =====
+        window.log = function(msg, type) {
+            addLog(msg, type || 'info');
+        };
+    });
+    </script>
+{% endblock %}

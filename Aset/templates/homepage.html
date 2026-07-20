@@ -1,0 +1,349 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<script src="{{url_for('static',filename='js/homepage.js')}}"></script>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background: #0a0000;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .login-wrapper {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: 
+            radial-gradient(ellipse at 20% 50%, rgba(80, 0, 0, 0.4) 0%, transparent 60%),
+            radial-gradient(ellipse at 80% 50%, rgba(80, 0, 0, 0.3) 0%, transparent 60%),
+            linear-gradient(180deg, #0a0000 0%, #1a0505 50%, #0a0000 100%);
+        position: relative;
+        padding: 20px;
+    }
+
+    /* Efek tekstur */
+    .login-wrapper::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: 
+            repeating-linear-gradient(0deg, 
+                rgba(60, 0, 0, 0.03) 0px, 
+                rgba(60, 0, 0, 0.03) 2px,
+                transparent 2px, 
+                transparent 4px
+            );
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .login-card {
+        background: rgba(15, 5, 5, 0.92);
+        border: 1px solid rgba(180, 40, 40, 0.3);
+        border-radius: 12px;
+        padding: 45px 35px 40px;
+        max-width: 420px;
+        width: 100%;
+        position: relative;
+        z-index: 1;
+        box-shadow: 
+            0 20px 60px rgba(0, 0, 0, 0.8),
+            inset 0 1px 0 rgba(180, 40, 40, 0.2);
+        backdrop-filter: blur(5px);
+        transition: all 0.4s ease;
+    }
+
+    .login-card:hover {
+        border-color: rgba(180, 40, 40, 0.5);
+        box-shadow: 
+            0 25px 70px rgba(0, 0, 0, 0.9),
+            0 0 40px rgba(80, 0, 0, 0.15),
+            inset 0 1px 0 rgba(180, 40, 40, 0.3);
+    }
+
+    /* Header section */
+    .card-header {
+        text-align: center;
+        margin-bottom: 35px;
+        position: relative;
+    }
+
+    .logo-wrap {
+        display: inline-block;
+        position: relative;
+        margin-bottom: 15px;
+    }
+
+    .logo-img {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        border: 2px solid rgba(180, 40, 40, 0.4);
+        padding: 3px;
+        background: rgba(180, 40, 40, 0.1);
+        transition: all 0.5s ease;
+        display: block;
+        margin: 0 auto;
+    }
+
+    .logo-img:hover {
+        transform: scale(1.05) rotate(-3deg);
+        border-color: rgba(200, 50, 50, 0.6);
+    }
+
+    .brand-text {
+        color: #cc3333;
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        text-shadow: 0 0 30px rgba(180, 40, 40, 0.2);
+        margin: 5px 0 0;
+        font-family: 'Georgia', 'Times New Roman', serif;
+    }
+
+    .brand-sub {
+        color: rgba(180, 40, 40, 0.4);
+        font-size: 11px;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        margin-top: 5px;
+        font-weight: 300;
+    }
+
+    /* Divider */
+    .divider {
+        height: 1px;
+        background: linear-gradient(90deg, 
+            transparent 0%, 
+            rgba(180, 40, 40, 0.2) 30%, 
+            rgba(180, 40, 40, 0.4) 50%,
+            rgba(180, 40, 40, 0.2) 70%,
+            transparent 100%
+        );
+        margin: 20px 0 25px;
+    }
+
+    /* Form elements */
+    .form-group {
+        margin-bottom: 22px;
+        position: relative;
+    }
+
+    .form-label {
+        display: block;
+        color: rgba(200, 80, 80, 0.7);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 12px 16px;
+        background: rgba(30, 10, 10, 0.6);
+        border: 1px solid rgba(180, 40, 40, 0.2);
+        border-radius: 8px;
+        color: #e0a0a0;
+        font-size: 15px;
+        transition: all 0.3s ease;
+        outline: none;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    .form-input::placeholder {
+        color: rgba(180, 80, 80, 0.25);
+        font-size: 13px;
+    }
+
+    .form-input:focus {
+        border-color: rgba(200, 50, 50, 0.5);
+        background: rgba(30, 10, 10, 0.8);
+        box-shadow: 0 0 30px rgba(80, 0, 0, 0.15);
+        color: #e8b0b0;
+    }
+
+    .form-input:hover {
+        border-color: rgba(180, 40, 40, 0.35);
+    }
+
+    /* Password toggle (manual) */
+    .password-hint {
+        color: rgba(180, 80, 80, 0.2);
+        font-size: 11px;
+        text-align: right;
+        margin-top: 5px;
+        letter-spacing: 0.5px;
+        cursor: default;
+    }
+
+    /* Button */
+    .login-btn {
+        width: 100%;
+        padding: 13px;
+        background: linear-gradient(135deg, rgba(120, 20, 20, 0.8), rgba(80, 10, 10, 0.9));
+        border: 1px solid rgba(180, 40, 40, 0.3);
+        border-radius: 8px;
+        color: #e8c0c0;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 5px;
+        font-family: 'Segoe UI', sans-serif;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .login-btn:hover {
+        background: linear-gradient(135deg, rgba(140, 30, 30, 0.9), rgba(100, 15, 15, 0.95));
+        border-color: rgba(200, 50, 50, 0.5);
+        transform: translateY(-1px);
+        box-shadow: 0 10px 30px rgba(80, 0, 0, 0.3);
+        color: #f0d0d0;
+    }
+
+    .login-btn:active {
+        transform: translateY(0px);
+    }
+
+    /* Status message */
+    .status-msg {
+        display: block;
+        text-align: center;
+        margin-top: 18px;
+        color: #cc4444;
+        font-size: 13px;
+        font-weight: 500;
+        min-height: 25px;
+        font-family: 'Segoe UI', sans-serif;
+        letter-spacing: 0.5px;
+    }
+
+    .status-msg .highlight {
+        color: #cc3333;
+        font-weight: 700;
+    }
+
+    /* Small decorative elements */
+    .deco-line {
+        width: 40px;
+        height: 2px;
+        background: rgba(180, 40, 40, 0.2);
+        margin: 0 auto 20px;
+        border-radius: 2px;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+        .login-card {
+            padding: 30px 20px 30px;
+        }
+        .brand-text {
+            font-size: 22px;
+        }
+        .logo-img {
+            width: 75px;
+            height: 75px;
+        }
+    }
+
+    /* Simple animation for subtle effect */
+    @keyframes softPulse {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
+    }
+
+    .pulse-dot {
+        display: inline-block;
+        width: 4px;
+        height: 4px;
+        background: rgba(180, 40, 40, 0.3);
+        border-radius: 50%;
+        animation: softPulse 2s ease-in-out infinite;
+        margin: 0 3px;
+    }
+</style>
+
+<div class="login-wrapper">
+    <div class="login-card">
+        <!-- Header -->
+        <div class="card-header">
+            <div class="logo-wrap">
+                <img class="logo-img" src="{{url_for('static',filename='images/Logo.jpg')}}" alt="Logo" />
+            </div>
+            <h1 class="brand-text">FebriXiters</h1>
+            <div class="brand-sub">✦VERSION 1.0 ✦</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Form -->
+        <div class="form-group">
+            <label class="form-label">Username</label>
+            <input 
+                id="username" 
+                type="text" 
+                placeholder="your identity" 
+                class="form-input" 
+                autocomplete="off"
+            />
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Password</label>
+            <input 
+                id="password" 
+                type="password" 
+                placeholder="••••••••" 
+                class="form-input" 
+                autocomplete="off"
+            />
+            <div class="password-hint">⏎ press enter to submit</div>
+        </div>
+
+        <button onclick="auth()" class="login-btn">
+            <span>→ enter</span>
+        </button>
+
+        <!-- STATUS DIGANTI MENJADI FebriXiters -->
+        <span class="status-msg" id="status">
+            FebriXiters
+        </span>
+    </div>
+</div>
+
+<script>
+    // Biarkan user enter untuk submit
+    document.querySelectorAll('.form-input').forEach(input => {
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                auth();
+            }
+        });
+    });
+
+    // Sembunyikan status default setelah 2 detik
+    setTimeout(() => {
+        const status = document.getElementById('status');
+        if (status && status.textContent.trim() === 'FebriXiters') {
+            status.style.opacity = '0.5';
+        }
+    }, 2000);
+</script>
+
+{% endblock %}

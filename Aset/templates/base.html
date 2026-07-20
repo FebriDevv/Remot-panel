@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FebriXiters</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+</head>
+
+<style>
+    *::-webkit-scrollbar {
+        display: none;
+        font-family: monospace;
+    }
+    
+    /* ===== BASE STYLE ===== */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background: #0a0000;
+        overflow: hidden;
+        font-family: 'Courier New', monospace;
+    }
+
+    /* DARK ATMOSPHERE */
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: 
+            radial-gradient(ellipse at 30% 40%, rgba(139,0,0,0.08) 0%, transparent 60%),
+            radial-gradient(ellipse at 70% 60%, rgba(100,0,0,0.05) 0%, transparent 50%);
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    /* VIGNETTE */
+    body::after {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.9) 100%);
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    body > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    /* TEXT */
+    * {
+        color: #aa2222 !important;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        color: #7a0000 !important;
+        text-shadow: 0 0 20px rgba(139,0,0,0.15) !important;
+        font-weight: 700;
+        letter-spacing: 2px;
+    }
+
+    /* BUTTONS */
+    button, .tab, .emulator-btn {
+        background: rgba(139, 0, 0, 0.05) !important;
+        border: 1px solid rgba(139, 0, 0, 0.12) !important;
+        border-radius: 6px !important;
+        color: #aa2222 !important;
+        padding: 6px 14px !important;
+        transition: all 0.3s ease !important;
+        font-weight: 600;
+        font-size: 12px;
+        cursor: pointer !important;
+    }
+
+    button:hover, .tab:hover, .emulator-btn:hover {
+        background: rgba(139, 0, 0, 0.12) !important;
+        border-color: rgba(200, 0, 0, 0.3) !important;
+        box-shadow: 0 0 20px rgba(139, 0, 0, 0.1) !important;
+        transform: translateY(-1px);
+    }
+
+    .tab-active, .active {
+        background: rgba(139, 0, 0, 0.15) !important;
+        border-color: #8b0000 !important;
+        box-shadow: 0 0 30px rgba(139, 0, 0, 0.1) !important;
+    }
+
+    /* CARDS */
+    .card, .container > * {
+        background: rgba(10, 0, 0, 0.8) !important;
+        border: 1px solid rgba(139, 0, 0, 0.15) !important;
+        border-radius: 10px !important;
+        box-shadow: 
+            0 4px 20px rgba(0,0,0,0.6),
+            inset 0 1px 0 rgba(139,0,0,0.1) !important;
+        transition: all 0.3s ease;
+        position: relative;
+        padding: 14px !important;
+    }
+
+    .card:hover, .container > *:hover {
+        border-color: rgba(200, 0, 0, 0.3) !important;
+        box-shadow: 
+            0 8px 30px rgba(0,0,0,0.8),
+            0 0 40px rgba(139,0,0,0.05) !important;
+    }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar {
+        width: 3px;
+        background: transparent;
+    }
+    ::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(to bottom, #8b0000, #3a0000);
+        border-radius: 10px;
+    }
+
+    /* GLITCH */
+    @keyframes glitch {
+        0%, 100% { opacity: 1; }
+        2% { opacity: 0.97; transform: translateX(-0.5px); }
+        4% { opacity: 1; transform: translateX(0.5px); }
+        6% { opacity: 0.98; }
+        8% { opacity: 1; }
+    }
+    .container {
+        animation: glitch 4s infinite;
+    }
+
+    /* ===== CONSOLE STYLE - SEPERTI GAMBAR ===== */
+    #console-wrapper {
+        position: fixed !important;
+        bottom: 10px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: 88% !important;
+        max-width: 700px !important;
+        z-index: 100 !important;
+        background: rgba(10, 0, 0, 0.9) !important;
+        border: 1px solid rgba(139, 0, 0, 0.15) !important;
+        border-radius: 10px !important;
+        box-shadow: 
+            0 4px 20px rgba(0,0,0,0.6),
+            inset 0 1px 0 rgba(139,0,0,0.1) !important;
+        overflow: hidden !important;
+        backdrop-filter: blur(10px) !important;
+        transition: all 0.3s ease !important;
+        padding: 0 !important;
+    }
+
+    #console-wrapper:hover {
+        border-color: rgba(200, 0, 0, 0.3) !important;
+        box-shadow: 
+            0 8px 30px rgba(0,0,0,0.8),
+            0 0 40px rgba(139,0,0,0.05) !important;
+    }
+
+    #console-wrapper.collapsed {
+        border-color: rgba(139, 0, 0, 0.05) !important;
+    }
+
+    /* HEADER - TERMINAL */
+    #console-header {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 8px 16px !important;
+        background: rgba(10, 0, 0, 0.8) !important;
+        border-bottom: 1px solid rgba(139, 0, 0, 0.06) !important;
+    }
+
+    #console-title {
+        color: #7a0000 !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        letter-spacing: 3px !important;
+        font-family: 'Courier New', monospace !important;
+        text-shadow: 0 0 20px rgba(139,0,0,0.15) !important;
+    }
+
+    #console-actions {
+        display: flex !important;
+        gap: 8px !important;
+        align-items: center !important;
+    }
+
+    /* TOMBOL CLEAR - SEPERTI GAMBAR */
+    .btn-clear-traces {
+        background: rgba(200, 50, 50, 0.08) !important;
+        border: 1px solid rgba(200, 50, 50, 0.15) !important;
+        color: #ff5555 !important;
+        font-size: 11px !important;
+        padding: 4px 14px !important;
+        transition: all 0.3s ease !important;
+        border-radius: 6px !important;
+        cursor: pointer !important;
+        font-weight: 600 !important;
+        font-family: 'Courier New', monospace !important;
+    }
+
+    .btn-clear-traces:hover {
+        background: rgba(200, 50, 50, 0.15) !important;
+        border-color: #ff5555 !important;
+        box-shadow: 0 0 25px rgba(200, 50, 50, 0.1) !important;
+    }
+
+    /* TOMBOL TOGGLE */
+    #console-toggle {
+        background: rgba(139, 0, 0, 0.05) !important;
+        border: 1px solid rgba(139, 0, 0, 0.12) !important;
+        border-radius: 6px !important;
+        color: #aa2222 !important;
+        padding: 4px 14px !important;
+        font-size: 11px !important;
+        cursor: pointer !important;
+        transition: all 0.3s ease !important;
+        font-weight: 600 !important;
+        font-family: 'Courier New', monospace !important;
+        line-height: 20px !important;
+    }
+
+    #console-toggle:hover {
+        background: rgba(139, 0, 0, 0.12) !important;
+        border-color: rgba(200, 0, 0, 0.3) !important;
+        box-shadow: 0 0 20px rgba(139, 0, 0, 0.1) !important;
+        transform: translateY(-1px);
+    }
+
+    /* BODY - ISI LOG */
+    #console-body {
+        max-height: 80px !important;
+        overflow-y: auto !important;
+        padding: 6px 16px !important;
+        transition: max-height 0.3s ease !important;
+        background: rgba(0, 0, 0, 0.15) !important;
+    }
+
+    #console-wrapper:hover #console-body {
+        max-height: 160px !important;
+    }
+
+    #console-body::-webkit-scrollbar {
+        width: 3px !important;
+    }
+    #console-body::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.3) !important;
+    }
+    #console-body::-webkit-scrollbar-thumb {
+        background: linear-gradient(to bottom, #8b0000, #3a0000) !important;
+        border-radius: 10px !important;
+    }
+
+    #console-content {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 2px !important;
+    }
+
+    .log-entry {
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+        padding: 3px 8px !important;
+        font-family: 'Courier New', monospace !important;
+        font-size: 11px !important;
+        border-bottom: 1px solid rgba(139, 0, 0, 0.02) !important;
+        border-radius: 4px !important;
+    }
+
+    .log-entry:hover {
+        background: rgba(139, 0, 0, 0.03) !important;
+    }
+
+    .log-time {
+        color: #3a0000 !important;
+        font-size: 10px !important;
+        min-width: 60px !important;
+        opacity: 0.5 !important;
+        font-weight: 700 !important;
+        flex-shrink: 0 !important;
+    }
+
+    .log-icon {
+        font-size: 10px !important;
+        width: 18px !important;
+        text-align: center !important;
+        flex-shrink: 0 !important;
+    }
+
+    .log-msg {
+        flex: 1 !important;
+        word-break: break-word !important;
+        font-size: 11px !important;
+    }
+
+    /* WARNA LOG */
+    .log-error .log-icon { color: #ff2222 !important; }
+    .log-error .log-msg { color: #ff2222 !important; font-weight: 700 !important; }
+
+    .log-success .log-icon { color: #00cc44 !important; }
+    .log-success .log-msg { color: #00cc44 !important; font-weight: 600 !important; }
+
+    .log-warning .log-icon { color: #ffaa00 !important; }
+    .log-warning .log-msg { color: #ffaa00 !important; font-weight: 600 !important; }
+
+    .log-info .log-icon { color: #4488ff !important; }
+    .log-info .log-msg { color: #4488ff !important; }
+
+    .log-default .log-icon { color: #666 !important; }
+    .log-default .log-msg { color: #aa4444 !important; opacity: 0.7 !important; }
+
+    /* FOOTER - 1 logs online */
+    #console-footer {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 4px 16px !important;
+        background: rgba(0, 0, 0, 0.3) !important;
+        border-top: 1px solid rgba(139, 0, 0, 0.04) !important;
+        font-family: 'Courier New', monospace !important;
+        font-size: 9px !important;
+        color: #3a0000 !important;
+    }
+
+    #log-count {
+        color: #5a0000 !important;
+        font-weight: 700 !important;
+    }
+
+    #status-dot {
+        display: inline-block !important;
+        width: 6px !important;
+        height: 6px !important;
+        background: #00cc44 !important;
+        border-radius: 50% !important;
+        animation: blinkDot 1.5s infinite !important;
+    }
+
+    @keyframes blinkDot {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.2; }
+    }
+
+    #status-text {
+        color: #00cc44 !important;
+        opacity: 0.7 !important;
+    }
+
+    /* TOMBOL ENABLE - HIJAU */
+    .btn-enable {
+        background: rgba(0, 200, 0, 0.08) !important;
+        border: 1px solid rgba(0, 200, 0, 0.2) !important;
+        color: #00cc44 !important;
+        box-shadow: 0 0 20px rgba(0, 200, 0, 0.05) !important;
+        transition: all 0.3s ease !important;
+        cursor: pointer !important;
+    }
+
+    .btn-enable:hover {
+        background: rgba(0, 200, 0, 0.15) !important;
+        border-color: #00cc44 !important;
+        box-shadow: 0 0 30px rgba(0, 200, 0, 0.15) !important;
+        transform: scale(1.02) !important;
+    }
+
+    .btn-enable.active {
+        background: rgba(0, 200, 0, 0.2) !important;
+        border-color: #00ff55 !important;
+        color: #00ff55 !important;
+        box-shadow: 0 0 40px rgba(0, 200, 0, 0.2) !important;
+    }
+
+    /* TOMBOL DISABLE - MERAH */
+    .btn-disable {
+        background: rgba(200, 0, 0, 0.08) !important;
+        border: 1px solid rgba(200, 0, 0, 0.2) !important;
+        color: #ff3333 !important;
+        box-shadow: 0 0 20px rgba(200, 0, 0, 0.05) !important;
+        transition: all 0.3s ease !important;
+        cursor: pointer !important;
+    }
+
+    .btn-disable:hover {
+        background: rgba(200, 0, 0, 0.15) !important;
+        border-color: #ff3333 !important;
+        box-shadow: 0 0 30px rgba(200, 0, 0, 0.15) !important;
+        transform: scale(1.02) !important;
+    }
+
+    .btn-disable.active {
+        background: rgba(200, 0, 0, 0.2) !important;
+        border-color: #ff4444 !important;
+        color: #ff4444 !important;
+        box-shadow: 0 0 40px rgba(200, 0, 0, 0.2) !important;
+    }
+
+    .btn-load {
+        transition: all 0.3s ease !important;
+        cursor: pointer !important;
+    }
+
+    .btn-load.loading {
+        opacity: 0.5 !important;
+    }
+
+    .btn-load.loaded {
+        color: #00cc44 !important;
+    }
+
+    /* STATUS INDICATOR */
+    .status-indicator {
+        border-left: 2px solid #8b0000 !important;
+        background: rgba(139, 0, 0, 0.03) !important;
+        padding-left: 12px !important;
+        border-radius: 0 6px 6px 0 !important;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+    }
+    .status-pulse {
+        animation: pulse 2s infinite;
+    }
+
+    hr {
+        border: none;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(139,0,0,0.1), transparent);
+        margin: 10px 0;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+        #console-wrapper {
+            width: 95% !important;
+            bottom: 8px !important;
+            border-radius: 8px !important;
+        }
+        
+        #console-header {
+            padding: 6px 12px !important;
+        }
+        
+        #console-title {
+            font-size: 10px !important;
+        }
+        
+        #console-actions button {
+            font-size: 9px !important;
+            padding: 3px 10px !important;
+            line-height: 16px !important;
+        }
+        
+        #console-body {
+            max-height: 60px !important;
+            padding: 4px 12px !important;
+        }
+        #console-wrapper:hover #console-body {
+            max-height: 120px !important;
+        }
+        .log-entry {
+            font-size: 9px !important;
+            gap: 6px !important;
+            padding: 2px 6px !important;
+        }
+        .log-time {
+            font-size: 8px !important;
+            min-width: 45px !important;
+        }
+        .log-icon {
+            font-size: 8px !important;
+            width: 14px !important;
+        }
+        .log-msg {
+            font-size: 9px !important;
+        }
+        #console-footer {
+            font-size: 8px !important;
+            padding: 3px 12px !important;
+        }
+        .btn-enable, .btn-disable {
+            font-size: 10px !important;
+            padding: 4px 10px !important;
+        }
+    }
+</style>
+
+<body>
+    {% block body %}
+        
+    {% endblock %}
+</body>
+</html>
